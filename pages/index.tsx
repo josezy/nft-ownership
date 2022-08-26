@@ -1,6 +1,8 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import Image from 'next/image'
+import { QrReader } from "react-qr-reader";
+
 import styles from '../styles/Home.module.css'
 
 const Home: NextPage = () => {
@@ -13,7 +15,17 @@ const Home: NextPage = () => {
       </Head>
 
       <main className={styles.main}>
-        <h1 className={styles.title}>
+        <QrReader
+          onResult={(result) => {
+            if (!!result) {
+              console.log("RESULT", result?.getText());
+            }
+          }}
+          containerStyle={{ width: '100%' }}
+          constraints={{ facingMode: 'user' }}
+        />
+
+        {/* <h1 className={styles.title}>
           Welcome to <a href="https://nextjs.org">Next.js!</a>
         </h1>
 
@@ -50,7 +62,7 @@ const Home: NextPage = () => {
               Instantly deploy your Next.js site to a public URL with Vercel.
             </p>
           </a>
-        </div>
+        </div> */}
       </main>
 
       <footer className={styles.footer}>

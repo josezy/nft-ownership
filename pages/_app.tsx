@@ -1,8 +1,14 @@
-import '../styles/globals.css'
-import type { AppProps } from 'next/app'
+import dynamic from 'next/dynamic';
+import React from 'react';
 
-function MyApp({ Component, pageProps }: AppProps) {
-  return <Component {...pageProps} />
+import '../styles/globals.css'
+
+const CreateReactAppEntryPoint = dynamic(() => import('./index'), {
+  ssr: false,
+});
+
+function MyApp() {
+  return <CreateReactAppEntryPoint />;
 }
 
-export default MyApp
+export default MyApp;

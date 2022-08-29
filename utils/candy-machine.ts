@@ -375,7 +375,7 @@ export const mintOneToken = async (
   beforeTransactions: Transaction[] = [],
   afterTransactions: Transaction[] = [],
   setupState?: SetupState
-): Promise<TransactionInstruction[]> => {
+): Promise<[TransactionInstruction[], anchor.web3.Keypair[]]> => {
   const mint = setupState?.mint ?? anchor.web3.Keypair.generate();
   const userTokenAccountAddress = (
     await getAtaForMint(mint.publicKey, payer)
@@ -576,7 +576,7 @@ export const mintOneToken = async (
     }
   }
 
-  return instructions
+  return [instructions, signers]
   // const instructionsMatrix = [instructions];
   // const signersMatrix = [signers];
 

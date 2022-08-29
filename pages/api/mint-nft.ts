@@ -34,7 +34,7 @@ export default async function handler(
       connection
     );
 
-    const instructions = await mintOneToken(candyMachine, lePK);
+    const [instructions, signers] = await mintOneToken(candyMachine, lePK);
 
     const transaction = new Transaction();
     instructions.forEach((instruction) => transaction.add(instruction));
@@ -42,6 +42,8 @@ export default async function handler(
     const block = await connection.getLatestBlockhash();
     transaction.recentBlockhash = block.blockhash;
     transaction.feePayer = lePK
+
+    transaction.partialSign(...signers)
 
     res.status(200).json({
       success: true,

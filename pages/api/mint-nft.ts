@@ -12,7 +12,7 @@ type ResponseData = {
 }
 
 const connection = new Connection(clusterApiUrl("devnet"));
-const candyMachineId = new PublicKey('2JuHo7foN4ybZRUssESKmTBhVPhCa95v6odG7T1UDMWU')
+const candyMachineId = new PublicKey('ER7FNx6TqPGBSx2cbhdFLBKHHBpDviisH691awksFudp')
 
 
 export default async function handler(

@@ -1,7 +1,7 @@
 import dynamic from 'next/dynamic';
 import React from 'react';
 
-import '../styles/globals.css'
+import 'tailwindcss/tailwind.css'
 
 const CreateReactAppEntryPoint = dynamic(() => import('./index'), {
   ssr: false,

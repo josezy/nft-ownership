@@ -1,34 +1,30 @@
 import { Metadata, Metaplex } from '@metaplex-foundation/js';
 import { clusterApiUrl, Connection, PublicKey } from '@solana/web3.js';
-// import bs58 from 'bs58';
-// import { toUint8Array } from 'js-base64';
+import { toUint8Array } from 'js-base64';
 import type { NextPage } from 'next'
 import Head from 'next/head'
 
 import { useEffect, useState } from 'react';
 import { QrReader } from "react-qr-reader";
-// import nacl from 'tweetnacl';
+import nacl from 'tweetnacl';
 
 const connection = new Connection(clusterApiUrl("devnet"));
 const mx = Metaplex.make(connection);
 
 const validateMintOwnership = async (signature: string, ownerHash: string, mintHash: string) => {
-  console.log({ signature, ownerHash, mintHash })
   const owner = new PublicKey(ownerHash)
   const mint = new PublicKey(mintHash)
 
   // Validate signature
-  // const sig = toUint8Array(signature)
-  // console.log("sig", sig)
-  // const verified = nacl
-  //   .sign
-  //   .detached
-  //   .verify(
-  //     new TextEncoder().encode(`${ownerHash}:${mintHash}`),
-  //     sig,
-  //     owner.toBytes()
-  //   )
-  // if (!verified) return false
+  const verified = nacl
+    .sign
+    .detached
+    .verify(
+      toUint8Array(`${ownerHash}:${mintHash}`),
+      toUint8Array(signature),
+      owner.toBytes()
+    )
+  if (!verified) return false
 
   // Validate mint ownership
   const metadatas = await mx.nfts().findAllByOwner({ owner }).run() as Metadata[]

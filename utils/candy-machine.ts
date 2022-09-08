@@ -1,4 +1,3 @@
-/* eslint-disable */
 import * as anchor from "@project-serum/anchor";
 
 import { MintLayout, TOKEN_PROGRAM_ID, Token } from "@solana/spl-token";
@@ -8,15 +7,6 @@ import {
   SYSVAR_SLOT_HASHES_PUBKEY,
   TransactionInstruction,
 } from "@solana/web3.js";
-import { sendTransactions, SequenceType } from "./connection";
-
-import {
-  CIVIC,
-  getAtaForMint,
-  getNetworkExpire,
-  getNetworkToken,
-  SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
-} from "./utils";
 
 export const CANDY_MACHINE_PROGRAM = new anchor.web3.PublicKey(
   "cndy3Z4yapfJBmL3ShUp5exZKqR3z33thTzeNMm2gRZ"
@@ -25,6 +15,47 @@ export const CANDY_MACHINE_PROGRAM = new anchor.web3.PublicKey(
 const TOKEN_METADATA_PROGRAM_ID = new anchor.web3.PublicKey(
   "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
 );
+
+const CIVIC = new anchor.web3.PublicKey(
+  "gatem74V238djXdzWnJf94Wo1DcnuGkfijbf3AuBhfs"
+);
+
+const getAtaForMint = async (
+  mint: anchor.web3.PublicKey,
+  buyer: anchor.web3.PublicKey
+): Promise<[anchor.web3.PublicKey, number]> => {
+  return await anchor.web3.PublicKey.findProgramAddress(
+    [buyer.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mint.toBuffer()],
+    SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID
+  );
+};
+
+const getNetworkExpire = async (
+  gatekeeperNetwork: anchor.web3.PublicKey
+): Promise<[anchor.web3.PublicKey, number]> => {
+  return await anchor.web3.PublicKey.findProgramAddress(
+    [gatekeeperNetwork.toBuffer(), Buffer.from("expire")],
+    CIVIC
+  );
+};
+
+const getNetworkToken = async (
+  wallet: anchor.web3.PublicKey,
+  gatekeeperNetwork: anchor.web3.PublicKey
+): Promise<[anchor.web3.PublicKey, number]> => {
+  return await anchor.web3.PublicKey.findProgramAddress(
+    [
+      wallet.toBuffer(),
+      Buffer.from("gateway"),
+      Buffer.from([0, 0, 0, 0, 0, 0, 0, 0]),
+      gatekeeperNetwork.toBuffer(),
+    ],
+    CIVIC
+  );
+};
+
+const SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID =
+  new anchor.web3.PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
 
 interface CandyMachineState {
   authority: anchor.web3.PublicKey;
@@ -66,73 +97,6 @@ export interface CandyMachineAccount {
   program: anchor.Program;
   state: CandyMachineState;
 }
-
-export const awaitTransactionSignatureConfirmation = async (
-  txid: anchor.web3.TransactionSignature,
-  timeout: number,
-  connection: anchor.web3.Connection,
-  queryStatus = false
-): Promise<anchor.web3.SignatureStatus | null | void> => {
-  let done = false;
-  let status: anchor.web3.SignatureStatus | null | void = {
-    slot: 0,
-    confirmations: 0,
-    err: null,
-  };
-  const subId = 0;
-  status = await new Promise(async (resolve, reject) => {
-    setTimeout(() => {
-      if (done) {
-        return;
-      }
-      done = true;
-      console.log("Rejecting for timeout...");
-      reject({ timeout: true });
-    }, timeout);
-
-    while (!done && queryStatus) {
-      // eslint-disable-next-line no-loop-func
-      (async () => {
-        try {
-          const signatureStatuses = await connection.getSignatureStatuses([
-            txid,
-          ]);
-          status = signatureStatuses && signatureStatuses.value[0];
-          if (!done) {
-            if (!status) {
-              console.log("REST null result for", txid, status);
-            } else if (status.err) {
-              console.log("REST error for", txid, status);
-              done = true;
-              reject(status.err);
-            } else if (!status.confirmations) {
-              console.log("REST no confirmations for", txid, status);
-            } else {
-              console.log("REST confirmation for", txid, status);
-              done = true;
-              resolve(status);
-            }
-          }
-        } catch (e) {
-          if (!done) {
-            console.log("REST connection error: txid", txid, e);
-          }
-        }
-      })();
-      await sleep(2000);
-    }
-  });
-
-  //@ts-ignore
-  try {
-    await connection.removeSignatureListener(subId);
-  } catch (e) {
-    // ignore
-  }
-  done = true;
-  console.log("Returning status", status);
-  return status;
-};
 
 const createAssociatedTokenAccountInstruction = (
   associatedTokenAddress: anchor.web3.PublicKey,
@@ -297,76 +261,6 @@ export type SetupState = {
   mint: anchor.web3.Keypair;
   userTokenAccount: anchor.web3.PublicKey;
   transaction: string;
-};
-
-export const createAccountsForMint = async (
-  candyMachine: CandyMachineAccount,
-  payer: anchor.web3.PublicKey
-): Promise<SetupState> => {
-  const mint = anchor.web3.Keypair.generate();
-  const userTokenAccountAddress = (
-    await getAtaForMint(mint.publicKey, payer)
-  )[0];
-
-  const signers: anchor.web3.Keypair[] = [mint];
-  const instructions = [
-    anchor.web3.SystemProgram.createAccount({
-      fromPubkey: payer,
-      newAccountPubkey: mint.publicKey,
-      space: MintLayout.span,
-      lamports:
-        await candyMachine.program.provider.connection.getMinimumBalanceForRentExemption(
-          MintLayout.span
-        ),
-      programId: TOKEN_PROGRAM_ID,
-    }),
-    Token.createInitMintInstruction(
-      TOKEN_PROGRAM_ID,
-      mint.publicKey,
-      0,
-      payer,
-      payer
-    ),
-    createAssociatedTokenAccountInstruction(
-      userTokenAccountAddress,
-      payer,
-      payer,
-      mint.publicKey
-    ),
-    Token.createMintToInstruction(
-      TOKEN_PROGRAM_ID,
-      mint.publicKey,
-      userTokenAccountAddress,
-      payer,
-      [],
-      1
-    ),
-  ];
-
-  return {
-    mint: mint,
-    userTokenAccount: userTokenAccountAddress,
-    transaction: (
-      await sendTransactions(
-        candyMachine.program.provider.connection,
-        candyMachine.program.provider.wallet,
-        [instructions],
-        [signers],
-        SequenceType.StopOnFailure,
-        "singleGossip",
-        () => {},
-        () => false,
-        undefined,
-        [],
-        []
-      )
-    ).txs[0].txid,
-  };
-};
-
-type MintResult = {
-  mintTxId: string;
-  metadataKey: anchor.web3.PublicKey;
 };
 
 export const mintOneToken = async (
@@ -577,40 +471,4 @@ export const mintOneToken = async (
   }
 
   return [instructions, signers]
-  // const instructionsMatrix = [instructions];
-  // const signersMatrix = [signers];
-
-  // try {
-  //   const txns = (
-  //     await sendTransactions(
-  //       candyMachine.program.provider.connection,
-  //       candyMachine.program.provider.wallet,
-  //       instructionsMatrix,
-  //       signersMatrix,
-  //       SequenceType.StopOnFailure,
-  //       "singleGossip",
-  //       () => {},
-  //       () => false,
-  //       undefined,
-  //       beforeTransactions,
-  //       afterTransactions
-  //     )
-  //   ).txs.map((t) => t.txid);
-  //   const mintTxn = txns[0];
-  //   return {
-  //     mintTxId: mintTxn,
-  //     metadataKey: metadataAddress,
-  //   };
-  // } catch (e) {
-  //   console.log(e);
-  // }
-  // return null;
-};
-
-export const shortenAddress = (address: string, chars = 4): string => {
-  return `${address.slice(0, chars)}...${address.slice(-chars)}`;
-};
-
-const sleep = (ms: number): Promise<void> => {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 };

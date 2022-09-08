@@ -1,9 +1,8 @@
-import axios from 'axios'
+import bs58 from 'bs58'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import * as anchor from "@project-serum/anchor";
 import { clusterApiUrl, Connection, PublicKey, Transaction } from '@solana/web3.js'
 import { getCandyMachineState, mintOneToken } from "../../utils/candy-machine";
-import { bs58 } from '@project-serum/anchor/dist/cjs/utils/bytes';
 
 type ResponseData = {
   success: boolean,
@@ -12,7 +11,7 @@ type ResponseData = {
 }
 
 const connection = new Connection(clusterApiUrl("devnet"));
-const candyMachineId = new PublicKey('ER7FNx6TqPGBSx2cbhdFLBKHHBpDviisH691awksFudp')
+const candyMachineId = new PublicKey('56kzTJjM3e3g5BgwEgQRZf7DLWkpTJjJVaXHGhUq9zz2')
 
 
 export default async function handler(

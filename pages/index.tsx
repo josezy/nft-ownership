@@ -76,16 +76,19 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main>
-        <QrReader
-          onResult={async (result) => {
-            if (!!result && qrString === '') {
-              setQrString(result?.getText())
-            }
-          }}
-          containerStyle={{ width: '100%' }}
-          constraints={{ facingMode: 'environment' }}
-        />
+      <main className='flex w-full'>
+        <div className='w-80 m-auto pt-10'>
+          <h1>QR reader</h1>
+          <QrReader
+            onResult={async (result) => {
+              if (!!result && qrString === '') {
+                setQrString(result?.getText())
+              }
+            }}
+            constraints={{ facingMode: 'environment' }}
+            videoContainerStyle={{  }}
+          />
+        </div>
 
         {showModal && (
           <>
